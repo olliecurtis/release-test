@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  workflow_call:
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set the correct npm version
+        run: nvm install && nvm use
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16.13.0'
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci

@@ -1,0 +1,55 @@
+name: release
+
+on:
+  release:
+    types: [ published ]
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  Build:
+      name: Build
+      permissions:
+        statuses: write
+        pull-requests: write
+      uses: ./.github/workflows/_build.yml
+
+  ReleaseWeb:
+    name: Release @olliecurtis/release-test to NPM
+    runs-on: ubuntu-latest
+    environment: Publishing
+    needs: [Build]
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+      with:
+        ref: main
+    
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '16.13.0'
+        registry-url: 'https://registry.npmjs.org'
+
+    - run: npm ci
+    
+    - run: npm run build
+
+    - name: Publish NPM package
+      run: |
+        npm version $RELEASE_VERSION --no-git-tag-version
+        npm publish
+        git push origin main
+      env:
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        RELEASE_VERSION: ${{ github.event.release.tag_name }}
+
+    # - name: Update package files
+    #   run: |
+    #     cd packages
+    #     git add .
+    #     git commit -m "Update package files"
+    #     git push origin main
+    #   env:
+    #     RELEASE_VERSION: ${{ github.event.release.tag_name }}
